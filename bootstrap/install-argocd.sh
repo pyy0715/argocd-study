@@ -11,8 +11,6 @@ if [[ ! -f "${KUBECONFIG_FILE}" ]]; then
   exit 1
 fi
 
-sed -i.bak 's|server: https://127.0.0.1:6443|server: https://host.docker.internal:6443|' "${KUBECONFIG_FILE}"
-
 export KUBECONFIG="${KUBECONFIG_FILE}"
 
 echo "Waiting for k3s node to become Ready..."
