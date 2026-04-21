@@ -1,0 +1,26 @@
+services:
+  k3s:
+    image: rancher/k3s:v1.33.10-k3s1
+    container_name: argocd-study-k3s
+    privileged: true
+    restart: unless-stopped
+    command:
+      - server
+      - --disable=traefik
+      - --disable=servicelb
+      - --tls-san=host.docker.internal
+      - --write-kubeconfig-mode=0644
+      - --write-kubeconfig=/output/kubeconfig.yaml
+    environment:
+      - K3S_TOKEN=argocd-study
+    volumes:
+      - ./.kube:/output
+      - k3s-server:/var/lib/rancher/k3s
+    ports:
+      - "6443:6443"
+    tmpfs:
+      - /run
+      - /var/run
+
+volumes:
+  k3s-server:

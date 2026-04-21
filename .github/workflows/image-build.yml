@@ -1,0 +1,92 @@
+name: image-build
+
+# 애플리케이션 소스 repo에서 태그를 푸시하거나 main에 머지되면 이미지를 ghcr.io에 푸시합니다.
+# 본 저장소에는 실제 애플리케이션 코드가 없으므로 구성 이해용 템플릿입니다.
+# 실제 사용 시 별도 app repo로 옮기거나 paths 필터로 sample-app 디렉터리만 트리거하세요.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sample-app/src/**'
+      - '.github/workflows/image-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/hello
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image tag
+        id: vars
+        run: echo "tag=sha-$(echo ${GITHUB_SHA} | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.vars.outputs.tag }}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: sample-app/src
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  bump-manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update image tag in Deployment
+        env:
+          TAG: ${{ needs.build.outputs.image_tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          FILE="sample-app/deployment.yaml"
+          sed -i "s|image: ghcr.io/${GITHUB_REPOSITORY}/hello:.*|image: ghcr.io/${GITHUB_REPOSITORY}/hello:${TAG}|" "${FILE}"
+          if git diff --quiet "${FILE}"; then
+            echo "No manifest changes."
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          BRANCH="bump-image-${TAG}"
+          git checkout -b "${BRANCH}"
+          git commit -am "chore: bump hello image to ${TAG}"
+          git push origin "${BRANCH}"
+
+          gh pr create \
+            --title "chore: bump hello image to ${TAG}" \
+            --body "Automated image tag bump for ArgoCD sync." \
+            --base main \
+            --head "${BRANCH}"
