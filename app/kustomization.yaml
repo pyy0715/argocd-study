@@ -2,8 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - deployment.yaml
+- deployment.yaml
 
 images:
-  - name: ghcr.io/pyy0715/argocd-study/hello
-    newTag: latest
+- name: ghcr.io/pyy0715/argocd-study/hello
+  newName: ghcr.io/pyy0715/argocd-study/hello
+  newTag: sha-3ec16d8
