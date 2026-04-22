@@ -5,39 +5,50 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export KUBECONFIG="${ROOT_DIR}/.kube/kubeconfig.yaml"
 
-echo "Installing Argo CD Image Updater into argocd namespace..."
-kubectl apply -n argocd \
-  -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/manifests/install.yaml
+# v1.x uses an ImageUpdater CRD instead of Application annotations.
+# The manifest already pins the argocd namespace, so -n is unnecessary.
+echo "Installing Argo CD Image Updater (stable) into argocd namespace..."
+kubectl apply \
+  -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/config/install.yaml
 
 echo "Waiting for rollout..."
-kubectl rollout status -n argocd deploy/argocd-image-updater --timeout=180s
+kubectl rollout status -n argocd deploy/argocd-image-updater-controller --timeout=180s
 
 cat <<'EOF'
 
 ==============================================
 Argo CD Image Updater is installed.
 
-Next steps to make it work with ghcr.io:
+Next steps:
 
-1. Create a GitHub PAT with read:packages scope and write access to your study repo.
-2. Create Kubernetes Secrets:
+1. Create a GitHub PAT with
+     - read:packages        (for registry token)
+     - repo                 (for git write-back to your study repo)
+   A single PAT covering both scopes is fine for local study.
 
-   # registry pull secret (name matches pullsecret annotation)
+2. Create Kubernetes Secrets in the argocd namespace:
+
+   # registry pull secret — only needed for PRIVATE ghcr images.
+   # Public images (like this study repo) can skip it.
    kubectl -n argocd create secret docker-registry ghcr-creds \
      --docker-server=ghcr.io \
-     --docker-username=YOUR_USERNAME \
-     --docker-password=YOUR_PAT
+     --docker-username=pyy0715 \
+     --docker-password=<PAT>
 
-   # git write-back token (referenced from argocd-image-updater-secret)
+   # git write-back secret — referenced by the ImageUpdater CR.
    kubectl -n argocd create secret generic git-creds \
-     --from-literal=username=YOUR_USERNAME \
-     --from-literal=password=YOUR_PAT
+     --from-literal=username=pyy0715 \
+     --from-literal=password=<PAT>
 
-3. Configure write-back credentials:
+3. (Optional) Override commit author:
 
    kubectl -n argocd patch configmap argocd-image-updater-config \
      --patch '{"data":{"git.user":"image-updater[bot]","git.email":"updater@example.com"}}'
 
-4. Apply the Stage 2 / 3 Applications once secrets are in place.
+4. Apply the ImageUpdater CR that targets the hello Application:
+
+   kubectl apply -f bootstrap/image-updater-hello.yaml
+
+See docs/02-image-updater.md for the full walkthrough.
 ==============================================
 EOF

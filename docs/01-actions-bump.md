@@ -1,9 +1,20 @@
 # 01 — ArgoCD + GitHub Actions
 
-**목표**: ArgoCD가 `app/deployment.yaml`을 동기화하고, GitHub Actions가 이미지 빌드와 태그 bump PR을 담당하는 전형적인 GitOps 흐름을 경험합니다.
+**목표**: ArgoCD가 `app/`을 동기화하고, GitHub Actions가 이미지 빌드와 태그 bump PR을 담당하는 전형적인 GitOps 흐름을 경험합니다.
 
 > [!NOTE]
 > ArgoCD가 매니페스트를 언제/어디서 렌더링하는지 등 내부 동작이 궁금하면 [ArgoCD Internals](concepts/argocd-internals.md) 참고.
+
+> [!IMPORTANT]
+> 현재 저장소는 Stage 2(Image Updater) 로 전환되어 있다. `.github/workflows/image-build.yml` 에는 `bump-manifest` job 이 없고, Stage 1 원형은 `.github/workflows/archive/image-build-with-bump.yml` 에 `on: {}` 로 비활성화된 채 보존되어 있다.
+>
+> Stage 1 을 재현하려면:
+>
+> ```bash
+> mv .github/workflows/image-build.yml .github/workflows/archive/image-build-stage2.yml
+> mv .github/workflows/archive/image-build-with-bump.yml .github/workflows/image-build.yml
+> # trigger 가 on: {} 로 비워져 있으니 Stage 1 의 on: push 블록으로 복원
+> ```
 
 ## Flow
 

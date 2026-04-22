@@ -1,8 +1,8 @@
 name: image-build
 
-# 애플리케이션 소스 repo에서 태그를 푸시하거나 main에 머지되면 이미지를 ghcr.io에 푸시합니다.
-# 본 저장소에는 실제 애플리케이션 코드가 없으므로 구성 이해용 템플릿입니다.
-# 실제 사용 시 별도 app repo로 옮기거나 paths 필터로 sample-app 디렉터리만 트리거하세요.
+# sample-app/src 변경 시 이미지를 빌드해 ghcr.io 에 push.
+# Stage 2 이후부터는 kustomization.yaml 의 태그 bump 는 Argo CD Image Updater 가 담당하므로
+# 이 workflow 는 build + push 까지만 책임진다.
 
 on:
   push:
@@ -55,50 +55,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-  bump-manifest:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install kustomize
-        run: |
-          set -euo pipefail
-          curl -fsSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-          sudo mv kustomize /usr/local/bin/
-          kustomize version
-
-      - name: Update image tag via kustomize
-        env:
-          TAG: ${{ needs.build.outputs.image_tag }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          IMAGE="ghcr.io/${GITHUB_REPOSITORY}/hello"
-          BRANCH="bump-image-${TAG}"
-
-          (cd app && kustomize edit set image "${IMAGE}=${IMAGE}:${TAG}")
-          if git diff --quiet app/kustomization.yaml; then
-            echo "No manifest changes."
-            exit 0
-          fi
-
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git checkout -b "${BRANCH}"
-          git commit -am "chore: bump hello image to ${TAG}"
-          git push --force-with-lease origin "${BRANCH}"
-
-          if gh pr view "${BRANCH}" --json number >/dev/null 2>&1; then
-            echo "PR already exists for ${BRANCH}."
-            exit 0
-          fi
-          gh pr create \
-            --title "chore: bump hello image to ${TAG}" \
-            --body "Automated image tag bump for ArgoCD sync." \
-            --base main \
-            --head "${BRANCH}"

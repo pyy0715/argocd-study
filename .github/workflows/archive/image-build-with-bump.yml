@@ -1,0 +1,108 @@
+name: image-build-with-bump (archived)
+
+# -----------------------------------------------------------------------------
+# Stage 1 archived workflow.
+#
+# build + bump-manifest 구조. Stage 2 로 전환하면서 bump-manifest 는 Argo CD
+# Image Updater 가 대체한다. 이 파일은 "Stage 1 을 언제든 복원할 수 있게 하기
+# 위한 참고본" 이며, `on: {}` 으로 트리거를 비워 뒀기 때문에 GitHub Actions
+# 에서 실행되지 않는다.
+#
+# Stage 1 재현:
+#   mv .github/workflows/archive/image-build-with-bump.yml \
+#      .github/workflows/image-build.yml
+#   # (원래의 image-build.yml 은 백업하거나 덮어쓰기 전에 git stash)
+# -----------------------------------------------------------------------------
+
+on: {}
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/hello
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image tag
+        id: vars
+        run: echo "tag=sha-$(echo ${GITHUB_SHA} | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.vars.outputs.tag }}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: sample-app/src
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  bump-manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kustomize
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+          kustomize version
+
+      - name: Update image tag via kustomize
+        env:
+          TAG: ${{ needs.build.outputs.image_tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY}/hello"
+          BRANCH="bump-image-${TAG}"
+
+          (cd app && kustomize edit set image "${IMAGE}=${IMAGE}:${TAG}")
+          if git diff --quiet app/kustomization.yaml; then
+            echo "No manifest changes."
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -b "${BRANCH}"
+          git commit -am "chore: bump hello image to ${TAG}"
+          git push --force-with-lease origin "${BRANCH}"
+
+          if gh pr view "${BRANCH}" --json number >/dev/null 2>&1; then
+            echo "PR already exists for ${BRANCH}."
+            exit 0
+          fi
+          gh pr create \
+            --title "chore: bump hello image to ${TAG}" \
+            --body "Automated image tag bump for ArgoCD sync." \
+            --base main \
+            --head "${BRANCH}"
