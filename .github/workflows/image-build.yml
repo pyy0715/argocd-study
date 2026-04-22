@@ -79,6 +79,8 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE="ghcr.io/${GITHUB_REPOSITORY}/hello"
+          BRANCH="bump-image-${TAG}"
+
           (cd app && kustomize edit set image "${IMAGE}=${IMAGE}:${TAG}")
           if git diff --quiet app/kustomization.yaml; then
             echo "No manifest changes."
@@ -87,11 +89,14 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          BRANCH="bump-image-${TAG}"
           git checkout -b "${BRANCH}"
           git commit -am "chore: bump hello image to ${TAG}"
-          git push origin "${BRANCH}"
+          git push --force-with-lease origin "${BRANCH}"
 
+          if gh pr view "${BRANCH}" --json number >/dev/null 2>&1; then
+            echo "PR already exists for ${BRANCH}."
+            exit 0
+          fi
           gh pr create \
             --title "chore: bump hello image to ${TAG}" \
             --body "Automated image tag bump for ArgoCD sync." \

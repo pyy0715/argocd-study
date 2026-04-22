@@ -19,8 +19,8 @@ sample-app/src/** 수정 → push
 
 - 로컬 변경이 있다면 먼저 원격에 push. ArgoCD는 원격 `main`의 manifest를 읽기 때문에 로컬 수정만으론 반영되지 않는다.
 
-> [!NOTE]
-> GitHub repo → Settings → Actions → General → Workflow permissions 에서 아래 두 항목이 켜져 있어야 Actions의 bump PR 생성이 동작한다.
+> [!IMPORTANT]
+> GitHub repo → Settings → Actions → General → Workflow permissions 에서 아래 **두 항목을 모두 켜야** Actions의 bump PR 생성이 동작한다. 둘 다 기본값은 꺼짐.
 > - **Read and write permissions**
 > - **Allow GitHub Actions to create and approve pull requests**
 
