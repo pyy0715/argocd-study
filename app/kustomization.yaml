@@ -10,4 +10,4 @@ configurations:
   - https://raw.githubusercontent.com/argoproj/argo-rollouts/master/docs/features/kustomize/rollout-transform-kustomize-v5.yaml
 images:
   - name: ghcr.io/pyy0715/argocd-study/hello
-    newTag: sha-4be1223
+    newTag: sha-903d748
