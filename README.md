@@ -20,6 +20,12 @@
 | 2 | ArgoCD + Image Updater (1의 Actions bump 대체) | [docs/02-image-updater.md](docs/02-image-updater.md) |
 | 3 | ArgoCD + Image Updater + Rollouts (2의 Deployment를 Rollout으로 교체) | [docs/03-rollouts.md](docs/03-rollouts.md) |
 
+## Concepts
+
+Stage 문서가 "어떻게 하는지"라면, concepts 문서는 "왜 그렇게 되는지".
+
+- [ArgoCD Internals](docs/concepts/argocd-internals.md) — repo-server의 매니페스트 렌더링, sync flow, tool detection, 캐시 등
+
 ## Layout
 
 ```

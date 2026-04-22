@@ -2,6 +2,9 @@
 
 **목표**: ArgoCD가 `app/deployment.yaml`을 동기화하고, GitHub Actions가 이미지 빌드와 태그 bump PR을 담당하는 전형적인 GitOps 흐름을 경험합니다.
 
+> [!NOTE]
+> ArgoCD가 매니페스트를 언제/어디서 렌더링하는지 등 내부 동작이 궁금하면 [ArgoCD Internals](concepts/argocd-internals.md) 참고.
+
 ## Flow
 
 ```
