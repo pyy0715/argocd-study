@@ -24,9 +24,9 @@ Optional: install the kubectl plugin for easier observation.
   mise use -g argo-rollouts
 
 Observe a Rollout:
-  kubectl argo rollouts get rollout hello -n stage3 --watch
+  kubectl argo rollouts get rollout hello -n hello --watch
 
 Promote a paused step manually:
-  kubectl argo rollouts promote hello -n stage3
+  kubectl argo rollouts promote hello -n hello
 ==============================================
 EOF

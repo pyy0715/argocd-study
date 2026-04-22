@@ -13,6 +13,11 @@ spec:
     - namePattern: "hello"
       commonUpdateSettings:
         updateStrategy: "newest-build"
+        # Registry 에 올라와 있는 이미지가 linux/amd64 단일 아키텍처라,
+        # 컨트롤러가 기본 플랫폼(runner 기준)으로만 필터링하면 후보가 0개가 된다.
+        # amd64 를 명시해 컨트롤러가 매니페스트를 수용하도록 한다.
+        platforms:
+          - linux/amd64
       images:
         - alias: "hello"
           imageName: "ghcr.io/pyy0715/argocd-study/hello"

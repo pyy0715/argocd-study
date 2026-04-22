@@ -16,7 +16,6 @@ spec:
     spec:
       containers:
         - name: hello
-          # TODO: replace pyy0715
           image: ghcr.io/pyy0715/argocd-study/hello:latest
           ports:
             - containerPort: 80

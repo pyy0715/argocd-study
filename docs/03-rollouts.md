@@ -34,31 +34,81 @@ mise use -g argo-rollouts
 
 ## Replace Deployment with Rollout
 
-`app/deployment.yaml`에서 Deployment 리소스를 `app/rollout.yaml.example`의 Rollout으로 교체합니다. Service 정의는 그대로 둡니다.
+Stage 2 의 `Deployment + Service + kustomization.yaml(images override)` 조합을, Stage 3 에서는 `Rollout + Service + kustomization.yaml(images override + configurations transformer)` 로 교체한다.
 
-```bash
-# 예시: deployment.yaml의 Deployment 부분만 교체
-mv app/deployment.yaml app/workload.yaml
-# app/workload.yaml 안의 Deployment를 Rollout으로 수동 교체하거나,
-# 아래처럼 새 파일 구조로 분리하는 편이 깔끔
-```
+> [!IMPORTANT]
+> Kustomize 의 `images:` 필드는 기본적으로 **Deployment / StatefulSet / DaemonSet 등 빌트인 타입에만** 작동한다. Rollout 은 CRD 라 kustomize 가 `spec.template.spec.containers[].image` 경로를 모른다. 따라서 `configurations:` 에 Argo Rollouts 가 제공하는 transformer 를 등록해 줘야 `images:` override 가 Rollout 에도 먹힌다. 이걸 빠뜨리면 Stage 2 의 Image Updater write-back 이 무효화된다 (컨트롤러가 `kustomize edit set image` 효과로 `newTag` 를 바꿔도 Rollout 매니페스트에 반영 안 됨).
 
-깔끔한 분리 방식:
+### 1. Rollout manifest 확정
 
 ```bash
 cat app/rollout.yaml.example | sed '/^#/d' > app/rollout.yaml
-# 그리고 app/deployment.yaml에서 Deployment 블록을 삭제, Service만 남김
 ```
 
-최종 `app/` 구조 예시:
+### 2. Service 파일 분리
+
+```bash
+cat > app/service.yaml <<'YAML'
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+spec:
+  selector:
+    app: hello
+  ports:
+    - port: 80
+      targetPort: 80
+YAML
+```
+
+### 3. 옛 Deployment 제거
+
+```bash
+git rm app/deployment.yaml
+```
+
+### 4. kustomization.yaml 갱신
+
+```yaml
+# app/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - rollout.yaml
+  - service.yaml
+
+configurations:
+  # Rollout 을 인식하도록 Kustomize 에 transformer 등록.
+  # https://argoproj.github.io/argo-rollouts/features/kustomize/
+  - https://raw.githubusercontent.com/argoproj/argo-rollouts/master/docs/features/kustomize/rollout-transform-kustomize-v5.yaml
+
+images:
+  - name: ghcr.io/pyy0715/argocd-study/hello
+    newTag: sha-XXXXXXX   # Image Updater 가 계속 덮어씀. 값 자체는 아무거나 OK.
+```
+
+> `configurations` 의 URL 은 Kustomize v5 용. ArgoCD 에 내장된 kustomize 는 v5 라인이라 그대로 작동한다 (Argo CD v2.8+).
+
+### 5. 최종 구조
 
 ```
 app/
-├── rollout.yaml      # Rollout (Deployment 대체)
-└── service.yaml      # Service만 분리
+├── rollout.yaml
+├── service.yaml
+└── kustomization.yaml
 ```
 
-그리고 Git에 commit, push. ArgoCD가 Rollout CR을 생성합니다.
+### 6. Commit & push
+
+```bash
+git add app/rollout.yaml app/service.yaml app/kustomization.yaml
+git commit -m "Stage 3: swap Deployment for Rollout with kustomize transformer"
+git push origin main
+```
+
+ArgoCD 가 repo-server 에서 `kustomize build app/` 을 수행 → Rollout / Service 매니페스트 렌더 → 클러스터 동기화. 기존 Deployment 리소스는 Argo CD 의 `prune: true` 정책에 따라 자동 삭제된다.
 
 ## Observe
 
