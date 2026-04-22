@@ -25,6 +25,7 @@
 Stage 문서가 "어떻게 하는지"라면, concepts 문서는 "왜 그렇게 되는지".
 
 - [ArgoCD Internals](docs/concepts/argocd-internals.md) — repo-server의 매니페스트 렌더링, sync flow, tool detection, 캐시 등
+- [Image Bump Ownership](docs/concepts/image-bump-ownership.md) — 누가 이미지 태그 bump를 할 것인가. CI vs 컨트롤러 패턴 비교와 Stage 1→2 전환 근거
 
 ## Layout
 

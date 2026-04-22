@@ -5,6 +5,9 @@
 > [!NOTE]
 > Image Updater는 v1.0부터 구성 모델이 **Application annotation → 별도 `ImageUpdater` CRD** 로 바뀌었다. 이 문서는 v1.x 기준이며, 옛 annotation 예제를 봐도 그대로 적용되지 않는다. (호환을 위해 `applicationRefs[].useAnnotations: true` 옵션은 남아 있음.)
 
+> [!TIP]
+> "CI 가 bump 할지 vs 컨트롤러가 bump 할지" 의 개념적 배경은 [Image Bump Ownership](concepts/image-bump-ownership.md) 에 별도로 정리되어 있다.
+
 ## Flow
 
 ```
