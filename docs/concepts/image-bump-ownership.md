@@ -54,9 +54,15 @@ sequenceDiagram
 ```
 
 - **주체**: 클러스터 내 컨트롤러 (Argo CD Image Updater)
-- **트리거**: registry 의 tag 변화 (polling 또는 webhook)
-- **이미지 검출 방법**: registry tag 목록을 실시간 조회
+- **트리거**: registry 의 tag 변화 (polling 또는 webhook) **+** Argo CD `Application.status` 의 변화
+- **이미지 검출 방법**:
+  - registry tag 목록을 실시간 조회 (새 태그가 뭐가 있는지)
+  - Kubernetes API 의 Argo CD `Application` CR 에서 `.status.summary.images` 조회 (현재 클러스터가 쓰는 태그가 뭔지)
+  - 둘을 비교해 bump 여부 결정
 - **쓰기 위치**: 같은 manifest 파일 or `.argocd-source-<app>.yaml`
+
+> [!NOTE]
+> Image Updater 와 Argo CD 가 직접 통신하는 것이 아니라 `Application` CR 을 공유 게시판처럼 쓴다. 자세한 메커니즘은 [Controller Coordination via CRs](controller-coordination.md) 참고.
 
 ### C. ArgoCD 가 직접 읽는다 (pull-only, 참고)
 
