@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
         - name: hello
-          # TODO: replace YOUR_USERNAME
-          image: ghcr.io/YOUR_USERNAME/argocd-study/hello:latest
+          # TODO: replace pyy0715
+          image: ghcr.io/pyy0715/argocd-study/hello:latest
           ports:
             - containerPort: 80
           resources:

@@ -7,7 +7,7 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
   # docs/02-image-updater.md 단계에서 아래 annotation을 이 Application에 추가합니다.
   # annotations:
-  #   argocd-image-updater.argoproj.io/image-list: hello=ghcr.io/YOUR_USERNAME/argocd-study/hello
+  #   argocd-image-updater.argoproj.io/image-list: hello=ghcr.io/pyy0715/argocd-study/hello
   #   argocd-image-updater.argoproj.io/hello.update-strategy: newest-build
   #   argocd-image-updater.argoproj.io/hello.pull-secret: pullsecret:argocd/ghcr-creds
   #   argocd-image-updater.argoproj.io/write-back-method: git
@@ -15,8 +15,8 @@ metadata:
 spec:
   project: default
   source:
-    # TODO: replace YOUR_USERNAME with your GitHub account.
-    repoURL: https://github.com/YOUR_USERNAME/argocd-study.git
+    # TODO: replace pyy0715 with your GitHub account.
+    repoURL: https://github.com/pyy0715/argocd-study.git
     targetRevision: main
     path: app
   destination:
