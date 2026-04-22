@@ -6,9 +6,12 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export KUBECONFIG="${ROOT_DIR}/.kube/kubeconfig.yaml"
 
 # v1.x uses an ImageUpdater CRD instead of Application annotations.
-# The manifest already pins the argocd namespace, so -n is unnecessary.
+# NOTE: the upstream install.yaml pins "argocd" on RoleBindings/ClusterRoleBinding
+# subjects but leaves the Deployment / Service / ServiceAccount / Role / CM / Secret
+# / NetworkPolicy without an explicit namespace. We therefore pass -n argocd so
+# the namespaced-but-unspecified resources land in argocd instead of default.
 echo "Installing Argo CD Image Updater (stable) into argocd namespace..."
-kubectl apply \
+kubectl apply -n argocd \
   -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/config/install.yaml
 
 echo "Waiting for rollout..."
