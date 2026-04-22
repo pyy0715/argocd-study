@@ -23,25 +23,25 @@ kubectl -n argocd exec deploy/argocd-repo-server -- kustomize version
 
 ## Sync Flow
 
-```
-┌──────────────┐  Application CR refresh
-│ app-controller│ ─────────────┐
-└──────────────┘               │
-       ▲                       ▼
-       │                ┌──────────────┐
-       │                │ repo-server  │
-       │                │  git fetch   │
-       │ rendered YAML  │  tool detect │
-       │                │  kustomize   │
-       │                │    build     │
-       │                └──────┬───────┘
-       │                       │
-       │ compare vs live       ▼
-       │                (rendered manifests)
-┌──────────────┐
-│  Kubernetes  │ ◄────── apply diff
-│   API Server │
-└──────────────┘
+```mermaid
+sequenceDiagram
+    autonumber
+    participant AC as application-controller
+    participant RS as repo-server
+    participant Git as Git Repo
+    participant K8s as Kubernetes API
+
+    Note over AC: periodic reconciliation<br/>(or webhook)
+    AC->>RS: GenerateManifest(repoURL, revision, path)
+    RS->>Git: fetch revision
+    RS->>RS: tool detection (Helm / Kustomize / ...)
+    RS->>RS: kustomize build
+    RS-->>AC: rendered YAML
+    AC->>K8s: read live state
+    AC->>AC: diff desired vs live
+    alt OutOfSync
+        AC->>K8s: apply diff
+    end
 ```
 
 1. **Application CR**이 `repoURL / targetRevision / path`를 선언.

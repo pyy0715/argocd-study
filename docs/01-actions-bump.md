@@ -18,12 +18,16 @@
 
 ## Flow
 
-```
-sample-app/src/** 수정 → push
-  └─ Actions: 이미지 빌드 → ghcr.io push
-      └─ Actions: app/deployment.yaml의 image 태그 bump PR 생성
-          └─ PR 리뷰 & merge
-              └─ ArgoCD가 hello 네임스페이스에 배포
+```mermaid
+flowchart TD
+    Dev[Developer edits sample-app/src] --> Push[git push]
+    Push --> Build[Actions: build image]
+    Build --> GHCR[(ghcr.io)]
+    Build --> Bump[Actions: bump kustomization.yaml]
+    Bump --> PR[PR 생성]
+    PR --> Merge{Review & merge}
+    Merge --> Argo[Argo CD refresh]
+    Argo --> K8s[Pods rolled out to hello ns]
 ```
 
 ## Prerequisites

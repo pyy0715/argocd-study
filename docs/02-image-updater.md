@@ -10,12 +10,15 @@
 
 ## Flow
 
-```
-이미지가 ghcr.io에 push (CI든 수동이든)
-  └─ argocd-image-updater-controller Pod 가 registry polling
-      └─ 새 태그 감지 → writeBackTarget: kustomization
-          └─ app/kustomization.yaml 의 images[].newTag 를 수정해 main 에 커밋
-              └─ Argo CD refresh → repo-server 가 kustomize build → 새 이미지로 sync
+```mermaid
+flowchart TD
+    Any[CI / 수동 / 외부 팀] -->|push image:sha-xxx| GHCR[(ghcr.io)]
+    IU["argocd-image-updater-controller<br/>(polling)"] -.->|list tags| GHCR
+    IU -->|detect new tag| Edit["kustomize edit set image<br/>(writeBackTarget: kustomization)"]
+    Edit --> Commit["commit app/kustomization.yaml<br/>on main branch"]
+    Commit --> Argo[Argo CD refresh]
+    Argo --> RS[repo-server kustomize build]
+    RS --> K8s[Pods rolled out to hello ns]
 ```
 
 Stage 1과 비교:

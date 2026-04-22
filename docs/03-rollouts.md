@@ -4,12 +4,18 @@
 
 ## Flow
 
-```
-이미지가 ghcr.io에 push
-  └─ Image Updater가 태그 반영 (Stage 2와 동일)
-      └─ Rollout CR이 새 ReplicaSet 생성
-          └─ canary steps에 따라 20% → 40% → 60% → 80% → 100% 확대
-              └─ 각 step 사이 pause. 수동 promote 또는 abort 가능
+```mermaid
+flowchart TD
+    Any[CI / 수동 push] --> GHCR[(ghcr.io)]
+    GHCR -.->|polling| IU[Image Updater]
+    IU --> Git[kustomization.yaml commit on main]
+    Git --> Argo[Argo CD sync]
+    Argo --> Rollout[Rollout CR]
+    Rollout --> RS["new ReplicaSet<br/>(canary)"]
+    RS --> S1[20% traffic]
+    S1 --> P1{pause}
+    P1 -->|promote| S2[40% → 60% → 80% → 100%]
+    P1 -->|abort| Stable[stable ReplicaSet 복귀]
 ```
 
 ## Install Argo Rollouts
