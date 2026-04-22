@@ -12,7 +12,7 @@ spec:
   applicationRefs:
     - namePattern: "hello"
       commonUpdateSettings:
-        updateStrategy: "latest"
+        updateStrategy: "newest-build"
       images:
         - alias: "hello"
           imageName: "ghcr.io/pyy0715/argocd-study/hello"

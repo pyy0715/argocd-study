@@ -91,7 +91,7 @@ spec:
   applicationRefs:
     - namePattern: "hello"
       commonUpdateSettings:
-        updateStrategy: "latest"
+        updateStrategy: "newest-build"
       images:
         - alias: "hello"
           imageName: "ghcr.io/pyy0715/argocd-study/hello"
@@ -109,7 +109,7 @@ kubectl -n argocd logs deploy/argocd-image-updater-controller -f
 | `applicationRefs[].namePattern` | 감시할 Argo CD Application 이름(glob). `hello` 만 매칭 |
 | `applicationRefs[].images[].alias` | 이 설정에 붙이는 짧은 이름. annotation 모델의 `hello=...` 왼쪽에 해당 |
 | `applicationRefs[].images[].imageName` | 태그를 제외한 이미지 이름. Updater가 이 레포를 registry polling |
-| `commonUpdateSettings.updateStrategy` | `semver`/`latest`/`digest`/`name` 중 선택. 우리 CI 는 sha 태그를 밀기 때문에 `latest` (push 순서 기반) 사용 |
+| `commonUpdateSettings.updateStrategy` | `semver`/`newest-build`/`digest`/`alphabetical` 중 선택. 우리 CI 는 sha 태그를 밀기 때문에 `newest-build` (registry push 시간 기반) 사용. v1.x 이전엔 `latest` 라는 이름이었고 아직 별명으로 지원되지만 deprecated. |
 | `writeBackConfig.method` | `git:secret:<ns>/<secret>` 형식. 앞서 만든 `git-creds` 참조 |
 | `writeBackConfig.gitConfig.branch` | 직접 push할 브랜치. Stage 1에서는 PR gate가 있었지만 **Stage 2는 main 에 바로 커밋** |
 | `writeBackConfig.gitConfig.writeBackTarget` | `"kustomization"` — Stage 1에서 만든 `app/kustomization.yaml` 의 `images:` 블록을 `kustomize edit set image` 효과로 수정. 지정 안 하면 `.argocd-source-<app>.yaml` 을 생성해 Stage 1 결과물과 이원화된다. |
