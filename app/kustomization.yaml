@@ -1,16 +1,13 @@
 # app/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
   - rollout.yaml
   - service.yaml
-
 configurations:
   # Rollout 을 인식하도록 Kustomize 에 transformer 등록.
   # https://argoproj.github.io/argo-rollouts/features/kustomize/
   - https://raw.githubusercontent.com/argoproj/argo-rollouts/master/docs/features/kustomize/rollout-transform-kustomize-v5.yaml
-
 images:
   - name: ghcr.io/pyy0715/argocd-study/hello
-    newTag: sha-XXXXXXX # Image Updater 가 계속 덮어씀. 값 자체는 아무거나 OK.
+    newTag: sha-4be1223
